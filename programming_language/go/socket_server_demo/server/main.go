@@ -1,21 +1,27 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 )
 
+var netAddress = flag.String("server address", "/tmp/server.sock", "")
+var serverConnType = flag.String("server connection type", "unix", "")
+
 func main() {
-	netAddress := "/tmp/server.sock"
+	flag.Parse()
 
 	server, err := net.Listen(
-		"unix",
-		netAddress,
+		*serverConnType,
+		*netAddress,
 	)
 
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	connCount := 0
@@ -25,6 +31,8 @@ func main() {
 		connCount++
 		fmt.Printf("new conn incoming,total conn num:%d\n", connCount)
 		go func(conn net.Conn) {
+			// 使用ioutil来避免多次read to buffer && 拼接成最终bytes
+			// TODO:另一种方法的标准写法是?
 			data, err := ioutil.ReadAll(conn)
 			if err != nil {
 				// pass
